@@ -1,0 +1,139 @@
+---
+title: "Homework_10"
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    fig_caption: true
+    latex_engine: pdflatex
+date: "2024-04-19"
+author: "Ritesh Penumatsa"
+---
+
+{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, include = TRUE, warning=FALSE,message=FALSE)
+library(ggplot2)
+library(dplyr)
+
+Problem 1
+
+{r}
+redline <- read.csv("redlining.csv")
+lm_model <- lm(policies ~ minority + fire + age + income, data= redline)
+coef(lm_model)
+
+ggplot(redline, aes(x = policies, y = minority)) + geom_point() +
+  geom_smooth(method = "lm")
+
+
+
+confint(lm_model)
+
+We are answering the question is the number of FAIR policies associated with racial/ethnic composition of a ZIP Code. 
+The statistical tool I used was a linear model to interpret this interaction. I then made a scatter-plot of the relationship 
+between policies and minority and fitted the model into an equation. I then checked whether or not the slopes of different 
+confounding variables were in the 95% confidence interval. Based on the scatter-plot, there seems to be a strong positive linear 
+correlation between policies and minorities. The slope of the minorities variable is positive even at 2.5% confidence level so it 
+would likely to assume there is a correlation between policies and minorities. The slope of the line is 0.00836 which means for 
+every 1 person who identifies as a minority there is 0.836% increase in policies.
+
+Problem 2
+
+Part A
+
+{r}
+groceries <- read.csv("groceries.csv")
+
+avg_price_per_store <- groceries %>% 
+  group_by(Store) %>% 
+  summarise(avg_price = mean(Price))
+
+ggplot(avg_price_per_store, aes(x = avg_price, y = Store)) + geom_bar(stat = "identity") + 
+  labs(x = "Average Price of Products", y = "Store", 
+       title = "Average Price of Products Across Different Stores") + coord_flip() + 
+   theme(axis.text.x = element_text(size = 6))
+
+
+Part B
+
+{r}
+stores_per_product <- groceries %>%
+  group_by(Product) %>%
+  summarise(Num_Stores = n_distinct(Store))
+
+ggplot(stores_per_product, aes(x = Num_Stores, y = Product)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Number of Stores Selling Product", y = "Product",
+       title = "Number of Stores Selling Each Product")  + 
+  theme(axis.text.y = element_text(size = 8))
+
+Part C
+
+{r}
+
+new_model <- lm(formula = Price ~ Product + Type, data = groceries)
+confint(new_model, level=0.95, "TypeGrocery", multiplicative=TRUE)
+
+
+
+
+Compared with ordinary grocery stores (like Albertsons, HEB, or Krogers), convenience stores charge 
+somewhere between $0.41 and $0.92 dollars more for the same product.
+
+Part D
+
+{r}
+
+lm_model <- lm(Price ~ Product + Store, data = groceries)
+store_coef <- coef(lm_model)[grep("Store", names(coef(lm_model)))]
+sorted_coef <- sort(store_coef)
+
+lowest_price_stores <- names(sorted_coef)[1:2]
+highest_price_stores <- names(sorted_coef)[(length(sorted_coef)-1):length(sorted_coef)]
+
+lowest_price_stores
+highest_price_stores
+
+
+The two stores that charge the lowest prices when compared to the same product is Walmart and Kroger Fresh Fare. 
+The two stores that charge the highest prices when compared to the same project are Whole Foods and Wheatsville Food Co-Op.
+
+Part E
+
+{r}
+lm_model <- lm(Price ~ Product + Store, data = groceries)
+coef_CM <- coef(lm_model)["StoreCentral Market"]
+coef_HEB <- coef(lm_model)[grep("StoreH-E-B", names(coef(lm_model)))]
+
+# Print the coefficients
+cat("Coefficient for Central Market:", coef_CM, "\n")
+cat("Coefficient for H-E-B:", coef_HEB, "\n")
+
+coef_WF <- coef(lm_model)["StoreWhole Foods"]
+cat("\nFor Comparison: Coefficient for Whole Foods:", coef_WF, "\n")
+
+
+Central Market charges a similar amount to HEB for the same product. Difference between the two stores is $.073 
+on average for the same product. Compared to the price of the product at Whole Foods the difference could account for about $1.
+
+Part F
+
+{r}
+groceries <- groceries %>% 
+  mutate(Income10K = Income/10000)
+
+linear_model <- lm(Price ~ Product + Income10K, data = groceries)
+
+coef(linear_model)["Income10K"]
+
+summary(linear_model)$coefficients["Income10K", "Std. Error"]
+
+coef(linear_model)["Income10K"] / summary(linear_model)$coefficients["Income10K", "Std. Error"]
+
+
+
+Customers in poorer ZIP Codes pay less for the same product on average because the coefficient is
+negative for the variable Income10K. One-standard deviation increase in the income of a ZIP code seems 
+to be associated with a -1.464 standard-deviation change in the price that consumers in that ZIP code 
+expect to pay for the same product.
